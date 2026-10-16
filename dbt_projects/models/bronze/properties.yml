@@ -1,0 +1,28 @@
+version: 2
+
+models:
+  - name: bronze_date
+    config:
+      materialized: view
+  - name: bronze_products
+    config:
+      materialized: view
+  - name: bronze_sale
+    columns:
+      - name: sale_id
+        tests:
+          - not_null
+          - unique
+    
+  - name: bronze_store
+    columns:
+      - name: store_sk
+        tests:
+          - not_null
+          - unique
+      - name: store_name
+        data_tests:
+        - accepted_values:
+            arguments:
+                values: ['MegaMart Manhattan', 'MegaMart Brooklyn', 'MegaMart Austin', 'MegaMart San Jose', 'MegaMart Toronto']
+   

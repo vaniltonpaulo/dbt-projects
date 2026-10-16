@@ -35,3 +35,12 @@ models:
     # we put here the file under models and how it will be materialized, in this case as a table. Other options are view, incremental, ephemeral
     bronze:
       +materialized: table #other options are view, incremental, ephemeral
+      schema: bronze #this is the schema where the models will be created. You can change it to whatever you want, but make sure it exists in your database.
+
+    silver:
+      +materialized: table
+      schema: silver
+    
+    gold:
+      +materialized: table
+      schema: gold
