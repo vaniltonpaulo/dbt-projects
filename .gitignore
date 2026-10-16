@@ -8,3 +8,12 @@ wheels/
 
 # Virtual environments
 .venv
+
+
+#import csv files
+import-dataset.py
+
+# dbt
+target/
+dbt_packages/
+logs/
