@@ -7,12 +7,16 @@ models:
   - name: bronze_products
     config:
       materialized: view
-  - name: bronze_sale
+  - name: bronze_sales
     columns:
-      - name: sale_id
+      - name: sales_id
         tests:
           - not_null
           - unique
+      - name: gross_amount
+        data_tests:
+        - generic_non_negative
+            
     
   - name: bronze_store
     columns:
@@ -25,4 +29,8 @@ models:
         - accepted_values:
             arguments:
                 values: ['MegaMart Manhattan', 'MegaMart Brooklyn', 'MegaMart Austin', 'MegaMart San Jose', 'MegaMart Toronto']
+            config:
+                    # In case you want to change the severity of the test, you can do it here. 
+                    # The default is error, but you can change it to warn or info. 
+                severity: warn   
    
