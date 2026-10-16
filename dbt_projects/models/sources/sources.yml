@@ -1,0 +1,16 @@
+version: 2
+
+sources:
+  - name: source
+    description: "This is the source data for the project."
+    #The name of the database where the source data is stored. This is usually the same as the target database, but it can be different if you are using a different database for your source data.
+    database: source    
+    # I craeted a new schema called public to store the source data. This is a good practice to keep the source data separate from the transformed data.
+    schema: public
+    tables:
+      - name: dim_customer
+      - name: dim_date
+      - name: dim_product
+      - name: dim_store
+      - name: fact_returns
+      - name: fact_sales
