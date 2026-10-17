@@ -1,0 +1,95 @@
+Table dim_customer {
+  customer_sk integer [pk]
+  customer_code varchar
+  first_name varchar
+  last_name varchar
+  gender varchar
+  email varchar
+  phone varchar
+  loyalty_tier varchar
+  signup_date date
+}
+
+Table dim_date {
+  date_sk integer [pk]
+  date date
+  day integer
+  month integer
+  month_name varchar
+  quarter integer
+  year integer
+  day_of_week integer
+  day_name varchar
+  is_weekend boolean
+  is_month_end boolean
+  is_month_start boolean
+  is_quarter_end boolean
+  is_quarter_start boolean
+}
+
+Table dim_product {
+  product_sk integer [pk]
+  product_code varchar
+  product_name varchar
+  department varchar
+  category varchar
+  supplier_sk integer
+  list_price decimal(12,2)
+  uom varchar
+}
+
+Table dim_store {
+  store_sk integer [pk]
+  store_code varchar
+  store_name varchar
+  city varchar
+  state_province varchar
+  region varchar
+  country varchar
+  open_date date
+  sq_ft integer
+}
+
+Table fact_sales {
+  sales_id integer [pk]
+  date_sk integer [not null]
+  store_sk integer [not null]
+  product_sk integer [not null]
+  customer_sk integer [not null]
+  promotion_sk integer
+  quantity integer
+  unit_price decimal(12,2)
+  gross_amount decimal(12,2)
+  discount_amount decimal(12,2)
+  net_amount decimal(12,2)
+  payment_method varchar
+}
+
+Table fact_returns {
+  sales_id integer [pk]
+  date_sk integer [not null]
+  store_sk integer [not null]
+  product_sk integer [not null]
+  returned_qty integer
+  return_reason varchar
+  refund_amount decimal(12,2)
+}
+
+// SALES RELATIONSHIPS
+
+Ref: fact_sales.customer_sk > dim_customer.customer_sk
+Ref: fact_sales.product_sk > dim_product.product_sk
+Ref: fact_sales.store_sk > dim_store.store_sk
+Ref: fact_sales.date_sk > dim_date.date_sk
+
+// RETURNS RELATIONSHIPS
+
+Ref: fact_returns.sales_id - fact_sales.sales_id
+Ref: fact_returns.product_sk > dim_product.product_sk
+Ref: fact_returns.store_sk > dim_store.store_sk
+Ref: fact_returns.date_sk > dim_date.date_sk
+
+// supplier_sk and promotion_sk have no corresponding
+// dimension tables in the six supplied CSV files.
+
+

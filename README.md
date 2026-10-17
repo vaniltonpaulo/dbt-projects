@@ -8,6 +8,16 @@ The goal is to transform raw retail data into clean, reliable datasets and busin
 
 The pipeline includes data transformations, automated data-quality tests, historical tracking with dbt snapshots, and separate development and production environments.
 
+## Database Design
+
+![Database Schema](docs/images/database_schema.png)
+
+## dbt Project Lineage
+
+![dbt Lineage](docs/images/lineage.png)
+
+
+
 ## Tech Stack
 
 - **PostgreSQL** — Data storage and SQL transformations
