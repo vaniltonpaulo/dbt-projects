@@ -1,0 +1,61 @@
+version: 2
+
+models:
+  - name: silver_customers
+    columns:
+      - name: customer_sk
+        data_tests:
+          - unique
+          - not_null
+
+  - name: silver_products
+    columns:
+      - name: product_sk
+        data_tests:
+          - unique
+          - not_null
+
+  - name: silver_stores
+    columns:
+      - name: store_sk
+        data_tests:
+          - unique
+          - not_null
+
+  - name: silver_returns
+    columns:
+      - name: sales_id
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('bronze_sales')
+                field: sales_id
+
+  - name: silver_sales_enriched
+    columns:
+      - name: sales_id
+        data_tests:
+          - unique
+          - not_null
+
+      - name: customer_sk
+        data_tests:
+          - relationships:
+              arguments:
+                to: ref('silver_customers')
+                field: customer_sk
+
+      - name: product_sk
+        data_tests:
+          - relationships:
+              arguments:
+                to: ref('silver_products')
+                field: product_sk
+
+      - name: store_sk
+        data_tests:
+          - relationships:
+              arguments:
+                to: ref('silver_stores')
+                field: store_sk
