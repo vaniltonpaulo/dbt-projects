@@ -1,0 +1,7 @@
+snapshots:
+  - name: snap_customers
+    relation: source('source', 'dim_customer')
+    config:
+      strategy: check
+      unique_key: customer_sk
+      check_cols: ['first_name','last_name', 'email']
