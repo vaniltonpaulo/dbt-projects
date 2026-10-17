@@ -4,9 +4,13 @@ sources:
   - name: source
     description: "This is the source data for the project."
     #The name of the database where the source data is stored. This is usually the same as the target database, but it can be different if you are using a different database for your source data.
-    database: source    
-    # I craeted a new schema called public to store the source data. This is a good practice to keep the source data separate from the transformed data.
-    schema: public
+    # WE are going to parameterize the database name, so we can change it easily in the future. 
+    #We are going to use the target database name, which is specified in the profiles.yml file. 
+    #This way, we can change the target database name in one place and it will be reflected in all the models that use the source data.
+    # This can also be catalog in case you are using databricks, but in this case we are using postgres, so we will use database.
+    database: '{{ target.dbname }}'    
+    # I craeted a new schema called source to store the source data. This is a good practice to keep the source data separate from the transformed data.
+    schema: "{{ 'source' if target.name == 'prod' else 'public' }}"
     tables:
       - name: dim_customer
       - name: dim_date
