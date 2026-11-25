@@ -1,5 +1,6 @@
-# In this cases sales_id is unique.
-# Although sales_id is to be assumeed as unique. just check
+# SCD Type 2 history of returns. The timestamp strategy relies on fact_returns.updated_at
+# (set by scripts/load_raw_data.py). There is one return per sale, so sales_id is the key;
+# the unique test on silver_returns.sales_id guards that assumption.
 snapshots:
   - name: snap_returns
     relation: source('source', 'fact_returns')

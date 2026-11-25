@@ -1,9 +1,10 @@
 {{ config(materialized='view') }}
 
--- Purpose: Standardize customer information, extract email domains, classify loyalty membership, 
+-- Purpose: Standardize customer information, extract email domains, classify loyalty membership,
 -- and prepare customer dimensions for analysis.
-
 -- Transformations: String cleaning, null handling, email extraction, loyalty categorization, and Boolean flags.
+-- Grain: one row per customer_sk.
+
 WITH customers AS (
     SELECT *
     FROM {{ ref('bronze_customers') }}

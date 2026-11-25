@@ -1,0 +1,18 @@
+version: 2
+
+seeds:
+  - name: return_reasons
+    description: >
+      Maps each return reason to a business category and whether the business could have
+      prevented it. The categories are example business rules, kept in a seed so analysts
+      can change them without touching SQL.
+    config:
+      column_types:
+        return_reason: varchar
+        reason_category: varchar
+        is_controllable: boolean
+    columns:
+      - name: return_reason
+        data_tests:
+          - unique
+          - not_null

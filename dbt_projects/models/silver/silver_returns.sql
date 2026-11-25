@@ -2,15 +2,16 @@
 
 -- Purpose: Enrich return records with their original sales and detect potential data-quality problems.
 -- This is useful because refund amounts should be interpreted in the context of the original transaction.
+-- Grain: one row per returned sale (sales_id).
 
- -- Transformations:
+-- Transformations:
 -- - Joins return records to original sales.
+-- - Categorises return reasons using the return_reasons seed.
 -- - Calculates percentage of purchased units returned.
 -- - Identifies orphan returns (returns without matching sales).
 -- - Flags refunds greater than the original net sale amount.
 -- - Flags returned quantities greater than sold quantities.
 -- - Detects inconsistent product/store references.
-
 
 WITH returns AS (
     SELECT *
@@ -32,6 +33,14 @@ dates AS (
         date_sk,
         date
     FROM {{ ref('bronze_date') }}
+),
+
+reason_categories AS (
+    SELECT
+        return_reason,
+        reason_category,
+        is_controllable
+    FROM {{ ref('return_reasons') }}
 )
 
 SELECT
@@ -48,6 +57,9 @@ SELECT
         NULLIF(TRIM(r.return_reason), ''),
         'Unknown'
     ) AS return_reason,
+
+    COALESCE(rc.reason_category, 'Unclassified') AS return_reason_category,
+    rc.is_controllable AS is_controllable_return,
 
     r.refund_amount::NUMERIC(14, 2) AS refund_amount,
 
@@ -91,3 +103,6 @@ LEFT JOIN sales s
 
 LEFT JOIN dates d
     ON r.date_sk = d.date_sk
+
+LEFT JOIN reason_categories rc
+    ON COALESCE(NULLIF(TRIM(r.return_reason), ''), 'Unknown') = rc.return_reason

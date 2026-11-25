@@ -2,6 +2,8 @@
 
 -- Purpose: Prepare geographic information and classify stores based on their physical size.
 -- Transformations: Geographic standardization, date conversion, and store-size segmentation.
+-- Grain: one row per store_sk.
+
 WITH stores AS (
     SELECT *
     FROM {{ ref('bronze_store') }}

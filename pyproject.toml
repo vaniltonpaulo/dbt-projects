@@ -1,7 +1,7 @@
 [project]
 name = "dbt-projects"
 version = "0.1.0"
-description = "Add your description here"
+description = "Retail analytics pipeline built with dbt and PostgreSQL: medallion layers, data-quality tests and SCD2 snapshots."
 readme = "README.md"
 authors = [
     { name = "vaniltonpaulo", email = "V.Paulo@campus.lmu.de" }
@@ -9,15 +9,13 @@ authors = [
 requires-python = ">=3.13"
 dependencies = [
     "dbt-core>=1.12.6",
+    "dbt-databricks>=1.13.0",
     "dbt-postgres>=1.11.0",
     "pandas>=3.0.6",
     "psycopg2-binary>=2.9.13",
     "sqlalchemy>=2.1.4",
 ]
 
-[project.scripts]
-dbt-projects = "dbt_projects:main"
-
-[build-system]
-requires = ["uv_build>=0.12.5,<0.13.0"]
-build-backend = "uv_build"
+[tool.uv]
+# This repository is a dbt project, not an installable Python package.
+package = false

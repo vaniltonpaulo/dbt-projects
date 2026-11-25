@@ -23,14 +23,28 @@ models:
           - not_null
 
   - name: silver_returns
+    description: "One row per returned sale, enriched with the original sale and data-quality flags."
     columns:
       - name: sales_id
         data_tests:
+          - unique
           - not_null
           - relationships:
               arguments:
                 to: ref('bronze_sales')
                 field: sales_id
+              config:
+                # Orphan returns are expected and flagged by is_orphan_return,
+                # so surface them as a warning instead of failing the build.
+                severity: warn
+      - name: return_reason
+        data_tests:
+          - relationships:
+              arguments:
+                to: ref('return_reasons')
+                field: return_reason
+              config:
+                severity: warn  # new reasons need a category in seeds/return_reasons.csv
 
   - name: silver_sales_enriched
     columns:

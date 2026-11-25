@@ -1,3 +1,4 @@
+-- Row count and amounts in silver_sales_enriched must match bronze_sales exactly (no fan-out or loss from joins).
 WITH bronze AS (
     SELECT
         COUNT(*) AS row_count,

@@ -1,3 +1,4 @@
+-- Every return in bronze must be counted once in silver_sales_enriched (refunds and units).
 WITH returns AS (
     SELECT
         SUM(refund_amount)::NUMERIC(18, 2)

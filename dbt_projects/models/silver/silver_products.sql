@@ -2,6 +2,8 @@
 
 -- Purpose: Clean product attributes and create price segments for analyzing different product groups.
 -- Transformations: Type casting, standardization, and conditional price segmentation. The price bands are example business rules.
+-- Grain: one row per product_sk.
+
 WITH products AS (
     SELECT *
     FROM {{ ref('bronze_products') }}

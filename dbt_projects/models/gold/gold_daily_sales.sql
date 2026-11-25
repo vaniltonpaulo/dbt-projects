@@ -1,6 +1,5 @@
 -- Business question: How much revenue does the business generate each day?
- -- I keep forgeting what this actually does function: NULLIF() prevents division by zero.
-{{ config(materialized='table') }}
+-- Grain: one row per sale_date.
 
 SELECT
     sale_date,
@@ -12,12 +11,8 @@ SELECT
     SUM(refunded_amount) AS refunds,
     SUM(retained_revenue) AS final_revenue,
 
-    ROUND(
-        SUM(retained_revenue) / NULLIF(COUNT(*), 0),
-        2
-    ) AS avg_sale_value
+    ROUND(SUM(retained_revenue) / COUNT(*), 2) AS avg_sale_value
 
 FROM {{ ref('silver_sales_enriched') }}
 
 GROUP BY sale_date
-ORDER BY sale_date

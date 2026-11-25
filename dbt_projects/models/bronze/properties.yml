@@ -4,33 +4,43 @@ models:
   - name: bronze_date
     config:
       materialized: view
+
   - name: bronze_products
     config:
       materialized: view
+
   - name: bronze_sales
     columns:
       - name: sales_id
-        tests:
+        data_tests:
           - not_null
           - unique
+      - name: quantity
+        data_tests:
+          - non_negative
+      - name: unit_price
+        data_tests:
+          - non_negative
       - name: gross_amount
         data_tests:
-        - generic_non_negative
-            
-    
+          - non_negative
+      - name: discount_amount
+        data_tests:
+          - non_negative
+      - name: net_amount
+        data_tests:
+          - non_negative
+
   - name: bronze_store
     columns:
       - name: store_sk
-        tests:
+        data_tests:
           - not_null
           - unique
       - name: store_name
         data_tests:
-        - accepted_values:
-            arguments:
+          - accepted_values:
+              arguments:
                 values: ['MegaMart Manhattan', 'MegaMart Brooklyn', 'MegaMart Austin', 'MegaMart San Jose', 'MegaMart Toronto']
-            config:
-                    # In case you want to change the severity of the test, you can do it here. 
-                    # The default is error, but you can change it to warn or info. 
-                severity: warn   
-   
+              config:
+                severity: warn  # a new store should be reviewed, not block the pipeline

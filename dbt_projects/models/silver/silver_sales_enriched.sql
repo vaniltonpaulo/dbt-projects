@@ -1,6 +1,6 @@
 -- This is the main silver transformation.
 -- It combines sales with customers, products, stores, dates, and aggregated returns to produce a complete transactional analytics dataset.
-
+-- Grain: one row per sale (sales_id). Returns are aggregated to sales_id first so the join cannot fan out.
 
 {{ config(materialized='view') }}
 

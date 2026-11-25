@@ -73,6 +73,7 @@ Table fact_returns {
   returned_qty integer
   return_reason varchar
   refund_amount decimal(12,2)
+  updated_at timestamp [note: 'added at load time; drives the snap_returns snapshot']
 }
 
 // SALES RELATIONSHIPS

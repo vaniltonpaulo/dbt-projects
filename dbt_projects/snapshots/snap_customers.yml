@@ -1,7 +1,9 @@
+# SCD Type 2 history of customers. The check strategy is used because dim_customer has no
+# last-modified column: a new version is recorded whenever a column in check_cols changes.
 snapshots:
   - name: snap_customers
     relation: source('source', 'dim_customer')
     config:
       strategy: check
       unique_key: customer_sk
-      check_cols: ['first_name','last_name', 'email']
+      check_cols: ['first_name', 'last_name', 'email']

@@ -1,8 +1,8 @@
 -- Business question: Which products sell the most, and which have the highest returns?
-
-{{ config(materialized='table') }}
+-- Grain: one row per product_sk.
 
 SELECT
+    product_sk,
     product_name,
     category,
 
@@ -20,4 +20,3 @@ SELECT
 FROM {{ ref('silver_sales_enriched') }}
 
 GROUP BY product_sk, product_name, category
-ORDER BY total_revenue DESC

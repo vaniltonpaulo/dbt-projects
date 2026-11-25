@@ -2,194 +2,130 @@
 
 ## Overview
 
-This project implements an end-to-end retail analytics pipeline using **dbt Core, PostgreSQL, Python, and SQL**.
+An end-to-end retail analytics pipeline built with **dbt Core, PostgreSQL, Python and SQL**.
 
-The goal is to transform raw retail data into clean, reliable datasets and business-ready analytics using the **Medallion Architecture (Bronze → Silver → Gold)**.
-
-The pipeline includes data transformations, automated data-quality tests, historical tracking with dbt snapshots, and separate development and production environments.
+Raw retail data is transformed into clean, tested, business-ready datasets using the **Medallion Architecture (Bronze → Silver → Gold)**. The pipeline includes automated data-quality tests, cross-layer reconciliation checks, SCD Type 2 history with dbt snapshots, and separate development and production environments.
 
 ## Database Design
-This in the docs folder
+
+Source schema (defined in [`docs/database_schema_design.dbml`](docs/database_schema_design.dbml)):
 
 ![Database Schema](docs/images/database_schema.png)
 
-## dbt Project Lineage
-This in the docs folder
-
+## dbt Lineage
 
 ![dbt Lineage](docs/images/lineage.png)
 
-
-
 ## Tech Stack
 
-- **PostgreSQL** — Data storage and SQL transformations
-- **dbt Core** — Data modeling, testing, and documentation
-- **Python & Pandas** — CSV data ingestion
-- **uv** — Python dependency management
-- **Git & GitHub** — Version control
+- **PostgreSQL**: storage and SQL transformations
+- **dbt Core**: modeling, testing, snapshots and documentation
+- **Python & pandas**: CSV ingestion ([`scripts/load_raw_data.py`](scripts/load_raw_data.py))
+- **uv**: Python dependency management
 
 ## Dataset
 
-The project uses six retail datasets:
+Six retail tables in a star schema: sales and returns facts connected to customer, product, store and date dimensions.
 
 | Table | Description |
 |---|---|
 | `dim_customer` | Customer information and loyalty membership |
-| `dim_product` | Product details, categories, and prices |
+| `dim_product` | Product details, categories and prices |
 | `dim_store` | Store locations and attributes |
-| `dim_date` | Calendar dimensions |
-| `fact_sales` | Sales transactions, quantities, and revenue |
-| `fact_returns` | Product returns and refunds |
+| `dim_date` | Calendar attributes |
+| `fact_sales` | Sales transactions, quantities and revenue |
+| `fact_returns` | Product returns and refunds (one return per sale) |
 
-The data follows a star-schema structure, connecting sales and returns to their related dimensions.
-the dataset can be found: https://github.com/anshlambagit/AnshLambaYoutube/tree/main/DBT_Masterclass
-
+Dataset source: [AnshLambaYoutube / DBT_Masterclass](https://github.com/anshlambagit/AnshLambaYoutube/tree/main/DBT_Masterclass)
 
 ## Data Architecture
 
-### 1. Bronze Layer — Raw Data
+### 1. Bronze: raw data
 
-The bronze layer reads source tables from PostgreSQL and prepares them for downstream transformations.
+One model per source table, selected 1:1 via `source()`. Bronze isolates every downstream model from the physical location of the raw data, which differs between dev and prod. Source-level tests (uniqueness, non-negative amounts, `gross = quantity × unit_price`, `net = gross − discount`) run here so bad data is caught before any transformation.
 
-**Responsibilities:**
-- Reference source tables using dbt `source()`
-- Apply basic type casting and initial standardization
-- Preserve the original transactional structure
+### 2. Silver: cleaned and enriched
 
-### 2. Silver Layer — Data Transformation
+- Standardizes text (trimming, casing, empty strings to `NULL`) and casts types
+- Classifies customers (loyalty), products (price bands) and stores (size bands)
+- Categorizes return reasons using the `return_reasons` seed
+- Flags data-quality problems on returns: orphan returns, refunds above the original sale, returned quantity above sold quantity, mismatched product/store references
+- `silver_sales_enriched` joins sales to every dimension and to aggregated returns, producing **one row per sale** with retained revenue, discount rate and return rate
 
-The silver layer cleans, joins, and enriches datasets.
+### 3. Gold: business analytics
 
-**Key transformations:**
-- Standardize customer and product attributes
-- Handle missing values and inconsistent text
-- Classify customers, products, and stores
-- Join sales with customer, product, store, and date dimensions
-- Calculate retained revenue, discounts, and return rates
-- Identify potentially invalid refund amounts and quantities
+Aggregated tables ready for Power BI or Tableau.
 
-The main model, `silver_sales_enriched`, provides one enriched record per sales transaction.
-This is the final step in the silver model. From here business critcal data can be extracted.
+| Model | Grain | Business question |
+|---|---|---|
+| `gold_daily_sales` | one row per day | How much revenue is generated each day? |
+| `gold_store_performance` | one row per store | Which stores generate the most revenue? |
+| `gold_product_performance` | one row per product | Which products perform best, and which have high return rates? |
 
-### 3. Gold Layer — Business Analytics
+## Design Decisions
 
-The gold layer contains aggregated tables designed for reporting and business decisions.
-You can plug this into power bi or tableu
-
-| Model | Business Question |
-|---|---|
-| `gold_daily_sales` | How much revenue is generated each day? |
-| `gold_store_performance` | Which stores generate the most revenue? |
-| `gold_product_performance` | Which products perform best, and which have high return rates? |
-
-**Key metrics:** Revenue, refunds, average sale value, sales volume, store rankings, and product return rates.
+- **Returns are aggregated before joining to sales.** Joining raw returns to sales would duplicate sales rows if a sale ever had more than one return. `silver_sales_enriched` aggregates returns to `sales_id` first, and the reconciliation tests prove that row counts and revenue totals match bronze exactly.
+- **Data-quality issues are flagged, not filtered.** Suspicious returns stay in the data with boolean flags, so analysts can see and quantify them instead of losing them silently. Expected issues (orphan returns, unknown return reasons) are `warn` tests, while structural guarantees (keys, grain, reconciliation) are `error` tests.
+- **Business rules live in seeds.** Return-reason categories are a CSV seed, so the mapping can be changed without editing SQL.
+- **Every gold model declares and tests its grain** with `unique` and `not_null` tests on its key.
+- **Environment-aware sources.** The raw schema is chosen from the dbt target, so the same code runs against dev and prod.
 
 ## Data Quality & Testing
 
-dbt tests are used to validate data throughout the pipeline.
+| Type | Examples |
+|---|---|
+| Generic | `unique`, `not_null`, `accepted_values`, `relationships` |
+| Custom generic | `non_negative` ([`tests/generic/non_negative.sql`](dbt_projects/tests/generic/non_negative.sql)) |
+| Singular | Sales arithmetic consistency; bronze → silver reconciliation of row counts, revenue, refunds and returned units |
 
-Implemented checks include:
+## Historical Tracking: dbt Snapshots
 
-- `unique` — Detect duplicate identifiers
-- `not_null` — Validate required fields
-- `accepted_values` — Validate categorical values
-- `relationships` — Check referential integrity
-- Custom SQL tests — Validate financial amounts and reconcile sales totals between layers
+SCD Type 2 history is kept with two snapshot strategies:
 
-Tests help detect data-quality issues before they affect downstream analytics.
+- **Check strategy** (`snap_customers`): `dim_customer` has no last-modified column, so a new version is recorded when name or email changes.
+- **Timestamp strategy** (`snap_returns`): uses `fact_returns.updated_at`.
 
-## Historical Tracking — dbt Snapshots
-
-The project implements **Slowly Changing Dimension Type 2 (SCD2)** using dbt snapshots.
-
-Two strategies are demonstrated:
-
-- **Check strategy:** Tracks customer attribute changes such as names and emails.
-- **Timestamp strategy:** Detects changes to return records using `updated_at`.
-
-Snapshots preserve previous versions of records using `dbt_valid_from` and `dbt_valid_to`.
+Each version is bounded by `dbt_valid_from` / `dbt_valid_to`. See [`analyses/`](dbt_projects/analyses/) for example history queries.
 
 ## Development & Production
 
-The project supports separate PostgreSQL environments through dbt targets.
-
-| Environment | Database | Raw Data Schema |
-|---|---|---|
-| Development (`dev`) | `source` | `source` |
-| Production (`prod`) | `Business_production` | `source` |
-
-The same dbt project can be executed against either environment without duplicating model code.
+| Target | Database | Raw data schema | dbt output schemas |
+|---|---|---|---|
+| `dev` | `source` | `public` | `bronze`, `silver`, `gold` |
+| `prod` | `Business_production` | `source` | `bronze`, `silver`, `gold` |
 
 ## Getting Started
 
-### 1. Install dependencies
-
 ```bash
+# 1. Install dependencies
 uv sync
+
+# 2. Load the raw CSVs (credentials come from environment variables)
+export PGPASSWORD=...  PGDATABASE=source
+uv run python scripts/load_raw_data.py --data-dir path/to/csvs --schema public
+
+# 3. Configure dbt: copy the example profile and set DBT_PG_PASSWORD
+cp dbt_projects/profiles.example.yml ~/.dbt/profiles.yml
+export DBT_PG_PASSWORD=...
+
+# 4. Build everything (seeds, snapshots, models and tests in dependency order)
+cd dbt_projects
+uv run dbt debug
+uv run dbt build
+
+# Build a single layer
+uv run dbt build --select models/silver
+
+# Deploy to production
+uv run dbt build --target prod
 ```
-
-### 2. Configure PostgreSQL
-
-Create `~/.dbt/profiles.yml` with the appropriate development and production connection details.
-
-Ensure the six raw tables have been imported into their corresponding PostgreSQL source schemas.
-
-### 3. Verify the connection
-
-From the directory containing `dbt_project.yml`:
-
-```bash
-dbt debug --target dev
-```
-
-### 4. Build the development pipeline
-
-```bash
-dbt build --target dev
-```
-
-### 5. Run individual layers
-
-```bash
-dbt run --select path:models/bronze --target dev
-dbt run --select path:models/silver --target dev
-dbt run --select path:models/gold --target dev
-```
-
-### 6. Execute tests and snapshots
-
-```bash
-dbt test --target dev
-dbt snapshot --target dev
-```
-
-### 7. Deploy to production
-
-After configuring and validating production access:
-
-```bash
-dbt build --target prod
-```
-You need to acess the hidden file profile.yml so that you edit your connections
-
-
 
 ## Key Concepts Demonstrated
 
-- ELT pipelines and Medallion Architecture
-- SQL transformations using CTEs, joins, aggregations, and window functions
-- Dimensional data modeling
-- dbt models, sources, seeds, macros, and tests
-- SCD Type 2 snapshots
-- Data-quality validation and reconciliation
-- Development and production environment separation
-- Business KPI modeling
-
-## Project Outcome
-
-The project demonstrates how raw transactional data can be transformed into structured, tested, and business-ready datasets.
-
-It provides a foundation for analyzing retail sales, comparing store performance, monitoring product returns, and supporting data-driven business decisions.
-
-Hopefully if you reading this HIRE ME!!!!!!!
+- ELT and Medallion Architecture
+- Dimensional modeling and explicit model grain
+- SQL with CTEs, joins, aggregations and window functions
+- dbt sources, seeds, snapshots, custom generic tests and singular tests
+- Cross-layer reconciliation testing
+- SCD Type 2 with check and timestamp strategies
+- Environment separation with dbt targets

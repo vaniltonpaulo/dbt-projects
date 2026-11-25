@@ -1,8 +1,8 @@
 -- Business question: Which stores generate the most revenue?
-
-{{ config(materialized='table') }}
+-- Grain: one row per store_sk.
 
 SELECT
+    store_sk,
     store_name,
     store_city,
 
@@ -10,10 +10,7 @@ SELECT
     SUM(units_sold) AS units_sold,
     SUM(retained_revenue) AS total_revenue,
 
-    ROUND(
-        SUM(retained_revenue) / NULLIF(COUNT(*), 0),
-        2
-    ) AS avg_sale_value,
+    ROUND(SUM(retained_revenue) / COUNT(*), 2) AS avg_sale_value,
 
     RANK() OVER (
         ORDER BY SUM(retained_revenue) DESC
@@ -22,4 +19,3 @@ SELECT
 FROM {{ ref('silver_sales_enriched') }}
 
 GROUP BY store_sk, store_name, store_city
-ORDER BY store_rank

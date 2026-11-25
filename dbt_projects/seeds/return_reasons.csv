@@ -1,0 +1,7 @@
+return_reason,reason_category,is_controllable
+Damaged,Fulfilment,true
+Wrong Item,Fulfilment,true
+Late Delivery,Fulfilment,true
+Defective,Product Quality,true
+Changed Mind,Customer Preference,false
+Unknown,Unclassified,

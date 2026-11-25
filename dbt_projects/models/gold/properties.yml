@@ -1,0 +1,26 @@
+version: 2
+
+models:
+  - name: gold_daily_sales
+    description: "Daily sales and refund totals. Grain: one row per sale_date."
+    columns:
+      - name: sale_date
+        data_tests:
+          - unique
+          - not_null
+
+  - name: gold_product_performance
+    description: "Sales volume, revenue and return rate per product. Grain: one row per product_sk."
+    columns:
+      - name: product_sk
+        data_tests:
+          - unique
+          - not_null
+
+  - name: gold_store_performance
+    description: "Revenue and ranking per store. Grain: one row per store_sk."
+    columns:
+      - name: store_sk
+        data_tests:
+          - unique
+          - not_null

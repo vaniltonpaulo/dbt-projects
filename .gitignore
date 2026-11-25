@@ -10,8 +10,11 @@ wheels/
 .venv
 
 
-#import csv files
+# Old local loader with hardcoded credentials (replaced by scripts/load_raw_data.py)
 import-dataset.py
+
+# macOS
+.DS_Store
 
 # dbt
 target/
